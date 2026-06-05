@@ -10,16 +10,17 @@ class User(db.Model):
 
 class Deck(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-
-    user_id = db.Column(db.Integer, nullable=False)
-
     title = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # This sets up a relationship so a deck can easily look up its cards
+    cards = db.relationship('Flashcard', backref='deck', lazy=True)
 
 class Flashcard(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-
-    deck_id = db.Column(db.Integer, nullable=False)
+    
+    # This links the flashcard directly to a specific Deck's ID
+    deck_id = db.Column(db.Integer, db.ForeignKey('deck.id'), nullable=False)
 
     question = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text, nullable=False)

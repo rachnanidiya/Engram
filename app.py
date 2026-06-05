@@ -3,12 +3,13 @@ import json
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
-from openai import OpenAI
+from google import genai
 
-from models import db, Flashcard   # IMPORTANT: import from models.py
+from models import db, Flashcard, Deck  
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///flashcards.db"
@@ -23,38 +24,82 @@ with app.app_context():
 def home():
     return render_template("index.html")
 
+
 def generate_flashcards(text):
-    return [
-        {"question": "What is AI?", "answer": "Simulation of human intelligence"},
-        {"question": "What is ML?", "answer": "Subset of AI that learns from data"},
-        {"question": "What is Python?", "answer": "Programming language used for AI"}
-    ]
-    return json.loads(content)
+    """
+    Sends raw notes to the free Gemini API and requests plain text JSON arrays.
+    """
+    prompt = f"""
+    You are an expert educational assistant. Create flashcards from the text below.
+    You must respond ONLY with a raw JSON array containing objects with 'question' and 'answer' keys.
+    Do not include any markdown backticks, intro text, or code block formatting like ```json.
+    
+    Text: {text}
+    """
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        
+      
+        clean_text = response.text.strip().replace("```json", "").replace("```", "")
+        return json.loads(clean_text)
+        
+    except Exception as e:
+        print("Gemini API Error details:", str(e))
+        return []
+
 
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
         data = request.get_json()
-        print("REQUEST DATA:", data)
-
         text = data.get("text") if data else None
 
         if not text:
             return jsonify({"error": "No text provided"}), 400
 
-        cards = generate_flashcards(text)
+    
+        new_deck = Deck(title="AI Generated Deck")
+        db.session.add(new_deck)
+        db.session.commit()  
 
-        print("CARDS GENERATED:", cards)
+       
+        cards_data = generate_flashcards(text)
+
+        if not cards_data:
+            return jsonify({"error": "Failed to generate flashcards from the text"}), 500
+
+        saved_cards = []
+        for item in cards_data:
+            new_card = Flashcard(
+                deck_id=new_deck.id,
+                question=item.get("question"),
+                answer=item.get("answer")
+            )
+            db.session.add(new_card)
+            db.session.commit()
+            
+            saved_cards.append({
+                "id": new_card.id,
+                "question": new_card.question,
+                "answer": new_card.answer
+            })
+
+        print(f"SUCCESS: Saved {len(saved_cards)} cards under Deck ID {new_deck.id}")
 
         return jsonify({
-            "cards": cards
+            "status": "success",
+            "deck_id": new_deck.id,
+            "cards": saved_cards
         })
 
     except Exception as e:
-        print("ERROR IN /generate:", str(e))
-        return jsonify({
-            "error": str(e)
-        }), 500
+        print("ERROR IN /generate route:", str(e))
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

@@ -1,28 +1,48 @@
-function generate() {
-    const text = document.getElementById("textInput").value;
+async function generate() {
+    const textInput = document.getElementById("textInput").value;
+    const container = document.getElementById("flashcardContainer");
+    const statusDiv = document.getElementById("status");
 
-    console.log("Sending:", text);
+    container.innerHTML = "";
+    if (!textInput.trim()) {
+        alert("Please enter some text first!");
+        return;
+    }
 
-    fetch("/generate", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ text: text })
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log("Response:", data);
+    statusDiv.innerText = "Generating flashcards... please wait... ✨";
 
-        if (data.error) {
-            document.getElementById("output").innerText = data.error;
-            return;
+    try {
+        const response = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: textInput })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.cards) {
+            statusDiv.innerText = `Success! Created ${result.cards.length} cards inside Deck #${result.deck_id}.`;
+
+            let cardHTML = "";
+
+            result.cards.forEach(card => {
+                cardHTML += `
+                    <div class="flashcard-wrapper" onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
+                        <div class="flashcard">
+                            <div class="card-face card-front">${card.question}</div>
+                            <div class="card-face card-back">${card.answer}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = cardHTML;
+
+        } else {
+            statusDiv.innerText = "Error: " + (result.error || "Failed to make cards");
         }
-
-        document.getElementById("output").innerText =
-            JSON.stringify(data.cards, null, 2);
-    })
-    .catch(err => {
-        console.error("Fetch error:", err);
-    });
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        statusDiv.innerText = "An error occurred while connecting to the server.";
+    }
 }
