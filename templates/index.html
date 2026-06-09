@@ -3,123 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Flashcard Generator</title>
+    <title>AI Flashcard Dashboard</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f6f9;
             color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .input-container {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 40px;
-        }
-        textarea {
-            width: 100%;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 16px;
-            resize: vertical;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 15px;
-            width: 100%;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        .status-message {
-            text-align: center;
-            font-weight: bold;
-            color: #7f8c8d;
-            margin: 20px 0;
-        }
-        #flashcardContainer {
+            margin: 0;
+            padding: 0;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: 280px 1fr; /* Split layout: Sidebar and Main content */
+            height: 100vh;
         }
-        .flashcard-wrapper {
-            perspective: 1000px;
-            height: 180px;
-            cursor: pointer;
-        }
-        .flashcard {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.4s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-radius: 10px;
-        }
-        .flashcard.flipped {
-            transform: rotateY(180deg);
-        }
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        
+        /* Sidebar Styling */
+        .sidebar {
+            background-color: #2c3e50;
+            color: white;
             padding: 20px;
             box-sizing: border-box;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 500;
+            overflow-y: auto;
+            border-right: 1px solid #1a252f;
         }
-        .card-front {
-            background-color: #ffffff;
-            color: #2c3e50;
-            border: 2px solid #3498db;
+        .sidebar h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
         }
-        .card-back {
-            background-color: #2c3e50;
-            color: #ffffff;
-            transform: rotateY(180deg);
-            border: 2px solid #2c3e50;
+        .deck-item {
+            background: #34495e;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
         }
+        .deck-item:hover {
+            background: #3498db;
+        }
+
+        /* Main Studio Content Area */
+        .main-content {
+            padding: 40px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        h1 { color: #2c3e50; margin-top: 0; }
+        .input-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%; border: 1px solid #ced4da; border-radius: 8px;
+            padding: 15px; font-size: 16px; resize: vertical; box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db; color: white; border: none; padding: 12px 25px;
+            font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer;
+            margin-top: 15px; width: 100%; transition: background 0.2s;
+        }
+        button:hover { background-color: #2980b9; }
+        .status-message { text-align: center; font-weight: bold; color: #7f8c8d; margin: 15px 0; }
+        
+        /* Flashcards Matrix Layout */
+        #flashcardContainer {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px; margin-top: 20px;
+        }
+        .flashcard-wrapper { perspective: 1000px; height: 160px; cursor: pointer; }
+        .flashcard {
+            width: 100%; height: 100%; position: relative;
+            transform-style: preserve-3d; transition: transform 0.4s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 10px;
+        }
+        .flashcard.flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            padding: 15px; box-sizing: border-box; border-radius: 10px;
+            text-align: center; font-size: 15px; font-weight: 500;
+        }
+        .card-front { background-color: #ffffff; color: #2c3e50; border: 2px solid #3498db; }
+        .card-back { background-color: #2c3e50; color: #ffffff; transform: rotateY(180deg); }
     </style>
 </head>
 <body>
 
-    <h1>📚 AI Flashcard Generator</h1>
+   <div class="sidebar">
+        <h3>🗂️ Saved Decks</h3>
+        
+        <button onclick="createNewDeckMode()" style="background-color: #27ae60; margin-bottom: 20px; font-size: 14px;">
+            ➕ Create New Deck
+        </button>
 
-    <div class="input-container">
-        <textarea id="textInput" rows="6" placeholder="Paste your study notes or textbook paragraphs here..."></textarea>
-        <button onclick="generate()">Generate Flashcards</button>
+        <div id="decksList">Loading historical saves...</div>
     </div>
 
-    <div id="status" class="status-message"></div>
-    
-    <h2>Your Flashcards:</h2>
-    <div id="flashcardContainer"></div>
+    <div class="main-content">
+        <h1>📚 AI Flashcard Studio</h1>
+
+        <div class="input-container">
+            <textarea id="textInput" rows="4" placeholder="Paste structural data here to mint a brand NEW deck..."></textarea>
+            <button onclick="generate()">Generate Flashcards</button>
+        </div>
+
+        <div id="status" class="status-message"></div>
+        
+        <h2 id="deckTitleHeading">Your Flashcards:</h2>
+        <div id="flashcardContainer"></div>
+    </div>
 
     <script src="/static/script.js"></script>
 </body>
