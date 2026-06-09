@@ -131,27 +131,83 @@ async function loadSavedDecks() {
     }
 }
 
-
 function renderCardsToScreen(cardsArray, append) {
     const container = document.getElementById("flashcardContainer");
     let cardHTML = "";
 
     cardsArray.forEach(card => {
+        // If the card interval is greater than 1 it means the user already got it right
+        // set its starting style to look faded and disable clicking on it
+        let startingStyle = "";
+        if (card.interval > 1) {
+            startingStyle = "style='opacity: 0.2; pointer-events: none;'";
+        }
+
         cardHTML += `
-            <div class="flashcard-wrapper" onclick="this.querySelector('.flashcard').classList.toggle(\'flipped\')">
+            <div class="flashcard-wrapper" id="card-box-${card.id}" ${startingStyle} onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
                 <div class="flashcard">
-                    <div class="card-face card-front">${card.question}</div>
-                    <div class="card-face card-back">${card.answer}</div>
+                    <div class="card-face card-front">
+                        <button class="delete-btn" onclick="event.stopPropagation(); deleteCard(${card.id})">🗑️</button>
+                        ${card.question}
+                    </div>
+                    <div class="card-face card-back">
+                        <p class="card-answer-text">${card.answer}</p>
+                        <div class="action-tray">
+                            <button class="btn-action btn-forgot" onclick="event.stopPropagation(); sendReview(${card.id}, 'wrong')">❌ Forgot</button>
+                            <button class="btn-action btn-knew" onclick="event.stopPropagation(); sendReview(${card.id}, 'correct')">✅ Knew It</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
     });
 
     if (append) {
-        // Add new cards without deleting what is already on screen
         container.innerHTML += cardHTML;
     } else {
-        // Wipe screen, only show new cards
         container.innerHTML = cardHTML;
+    }
+}
+
+
+async function deleteCard(cardId) {    
+    if (!confirm("Are you sure you want to delete this flashcard permanently?")) {
+        return;
+    }
+
+    const cardVisualBox = document.getElementById(`card-box-${cardId}`);
+
+    try {
+        const response = await fetch(`/flashcards/${cardId}`, {
+            method: "DELETE" 
+        });
+
+        if (response.ok) {
+            console.log("Card removed from database.");
+            
+            // Instantly drop it off the web layout completely
+            cardVisualBox.remove();
+        } else {
+            alert("Failed to delete card from server.");
+        }
+    } catch (error) {
+        console.error("Network connectivity fault:", error);
+    }
+}
+
+async function sendReview(cardId, userStatus) {
+    const cardVisualBox = document.getElementById(`card-box-${cardId}`);
+    try {
+        const response = await fetch(`/flashcards/${cardId}/review`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: userStatus })
+        });
+        if (response.ok) {
+            cardVisualBox.style.opacity = "0.2";
+            cardVisualBox.style.pointerEvents = "none";
+        }
+    } catch (error) {
+        console.error("Could not connect to backend server:", error);
     }
 }

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 import json
 from flask import Flask, request, jsonify, render_template
@@ -127,10 +128,67 @@ def get_deck_cards(deck_id):
         deck = Deck.query.get(deck_id)
         if not deck:
             return jsonify({"error": "Deck not found"}), 404
-        
-        cards_list = [{"id": c.id, "question": c.question, "answer": c.answer} for c in deck.cards]
+            
+        # Included c.interval right inside the dictionary payload
+        cards_list = [
+            {
+                "id": c.id, 
+                "question": c.question, 
+                "answer": c.answer,
+                "interval": c.interval
+            } for c in deck.cards
+        ]
         return jsonify({"cards": cards_list})
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/flashcards/<int:card_id>", methods=["DELETE"])
+def delete_flashcard(card_id):
+    try:
+        # Find the card in the database using its unique ID
+        card = Flashcard.query.get(card_id)
+        if not card:
+            return jsonify({"error": "Flashcard not found"}), 404
+
+        # Delete it from the database session and save changes
+        db.session.delete(card)
+        db.session.commit()
+
+        return jsonify({"message": "Flashcard deleted successfully!"})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/flashcards/<int:card_id>/review", methods=["POST"])
+def review_flashcard(card_id):
+    try:
+        data = request.get_json()
+        user_status = data.get("status") # finds whether review was correct or wrong
+
+        card = Flashcard.query.get(card_id)
+        if not card:
+            return jsonify({"error": "Card not found"}), 404
+
+        if user_status == "correct":
+            if card.interval == 1:
+                card.interval = 3 #review again afterr 3 days
+            elif card.interval == 3:
+                card.interval = 7 #review again after 7 days
+            else:
+                card.interval = card.interval * 2
+        elif user_status == "wrong":
+            card.interval = 1 #goes back to reviewing after 1 day
+
+        card.next_review = datetime.utcnow() + timedelta(days=card.interval)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Review saved successfully!",
+            "next_review_days": card.interval
+        })
+    except Exception as e:
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
