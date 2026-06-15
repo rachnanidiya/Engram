@@ -22,8 +22,16 @@
             <textarea id="textInput" rows="4" placeholder="Paste structural data here to mint a brand NEW deck..."></textarea>
             <button onclick="generate()">Generate Flashcards</button>
         </div>
-        <div id="status" class="status-box"></div>
-        <h2 id="deckTitleHeading">Your Flashcards:</h2>
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px;">
+            <h2 id="deckTitleHeading" style="margin: 0;">Your Flashcards:</h2>
+            
+            <label id="filterContainer" style="display: none; font-weight: bold; font-size: 14px; cursor: pointer;">
+                <input type="checkbox" id="dueFilterCheckbox" onchange="filterCardsOnScreen()"> 
+                🎯 Show Only Due Today
+            </label>
+        </div>
+
         <div id="flashcardContainer"></div>
     </div>
 

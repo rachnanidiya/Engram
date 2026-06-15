@@ -117,7 +117,7 @@ def generate():
 def get_decks():
     try:
         all_decks = Deck.query.order_by(Deck.created_at.desc()).all()
-        decks_list = [{"id": d.id, "title": f"Deck #{d.id} ({len(d.cards)} cards)"} for d in all_decks]
+        decks_list = [{"id": d.id, "title": d.title} for d in all_decks]
         return jsonify({"decks": decks_list})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -129,13 +129,14 @@ def get_deck_cards(deck_id):
         if not deck:
             return jsonify({"error": "Deck not found"}), 404
             
-        # Included c.interval right inside the dictionary payload
         cards_list = [
             {
                 "id": c.id, 
                 "question": c.question, 
                 "answer": c.answer,
-                "interval": c.interval
+                "interval": c.interval,
+    
+                "next_review": c.next_review.strftime("%Y-%m-%d %H:%M:%S") if c.next_review else None
             } for c in deck.cards
         ]
         return jsonify({"cards": cards_list})
@@ -187,6 +188,72 @@ def review_flashcard(card_id):
             "message": "Review saved successfully!",
             "next_review_days": card.interval
         })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/decks/<int:deck_id>/cards/due", methods=["GET"])
+def get_due_cards(deck_id):
+    try:
+        deck = Deck.query.get(deck_id)
+        if not deck:
+            return jsonify({"error": "Deck not found"}), 404
+            
+        current_time = datetime.utcnow()
+        
+        # Filter: Only grab cards where next_review is less than or equal to right now
+        due_cards = Flashcard.query.filter(
+            Flashcard.deck_id == deck_id,
+            Flashcard.next_review <= current_time
+        ).all()
+        
+        cards_list = [
+            {
+                "id": c.id, 
+                "question": c.question, 
+                "answer": c.answer,
+                "interval": c.interval
+            } for c in due_cards
+        ]
+        return jsonify({"cards": cards_list})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/decks/<int:deck_id>", methods=["DELETE"])
+def delete_deck(deck_id):
+    try:
+        deck = Deck.query.get(deck_id)
+        if not deck:
+            return jsonify({"error": "Deck not found"}), 404
+
+        for card in deck.cards:
+            db.session.delete(card)
+
+        db.session.delete(deck)
+        db.session.commit()
+        
+        return jsonify({"message": "Deck and all its cards deleted successfully!"})
+        
+    except Exception as e:
+        print("BACKEND DELETE ERROR:", str(e)) 
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+@app.route("/decks/<int:deck_id>", methods=["PUT"])
+def rename_deck(deck_id):
+    try:
+        data = request.get_json()
+        new_title = data.get("title")
+        
+        if not new_title or not new_title.strip():
+            return jsonify({"error": "Title cannot be empty"}), 400
+
+        deck = Deck.query.get(deck_id)
+        if not deck:
+            return jsonify({"error": "Deck not found"}), 404
+
+        deck.title = new_title.strip()
+        db.session.commit()
+        return jsonify({"message": "Deck renamed successfully!"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500

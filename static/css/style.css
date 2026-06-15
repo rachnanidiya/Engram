@@ -198,3 +198,50 @@ button {
     opacity: 1;
     transform: scale(1.1);
 }
+.deck-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.deck-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.deck-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    margin: 0;
+    width: auto;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.deck-action-btn:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+.due-badge {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    background-color: #ebf5fb;
+    color: #2980b9;
+    padding: 3px 8px;
+    border-radius: 12px;
+    border: 1px solid #aed6f1;
+    z-index: 15; /* Ensures it stays visible on top of everything */
+}
+
+/* If the card is locked, we make the badge look a bit more prominent so it stands out */
+.flashcard-wrapper[style*="pointer-events: none"] .due-badge {
+    background-color: #f4f6f7;
+    color: #7f8c8d;
+    border-color: #bdc3c7;
+}
