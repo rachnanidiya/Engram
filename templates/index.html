@@ -9,15 +9,25 @@
 </head>
 <body>
 
-    <!-- Tactical Ambiance Vector Shell Systems -->
     <div class="noise-overlay"></div>
     <div class="glow-orb orb-primary"></div>
     <div class="glow-orb orb-secondary"></div>
     <div class="glow-orb orb-tertiary"></div>
 
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-card">
+            <div class="spinner-container">
+                <div class="glow-spinner"></div>
+                <div class="inner-pulse"></div>
+                <span class="sparkle-icon">✨</span>
+            </div>
+            <h3 class="loading-title">Analyzing Literature</h3>
+            <p id="loadingSubtitle" class="loading-sub">Gemini is extracting text matrices and parsing flashcards...</p>
+        </div>
+    </div>
+
     <div class="app-shell">
 
-        <!-- ── SIDEBAR NAVIGATION ── -->
         <aside class="sidebar">
             <div class="sidebar-top">
                 <div class="brand">
@@ -40,7 +50,6 @@
             </div>
         </aside>
 
-        <!-- ── MAIN CONTENT WORKBENCH ── -->
         <main class="main">
 
             <header class="page-header">
@@ -54,14 +63,17 @@
                 </div>
             </header>
 
-            <!-- Inputs Shiny Console Box -->
             <section class="input-panel-wrapper">
                 <div class="input-panel">
                     <textarea id="textInput" class="note-input" rows="4" placeholder="Paste your notes, textbook excerpts, or any concept text here..."></textarea>
                     <div class="input-footer">
                         <div class="input-hint d-flex align-items-center gap-1">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                            <span>Tip: More context = better cards</span>
+                            <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;" onchange="handleFileSelection()">
+                            <button type="button" onclick="document.getElementById('pdfFileInput').click()" class="btn-action" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-2); max-width: fit-content; padding: 6px 12px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                                <span id="uploadButtonText">Upload PDF</span>
+                            </button>
+                            <span id="fileSelectedLabel" style="font-size: 12px; color: var(--success); display: none;"></span>
                         </div>
                         <button onclick="generate()" class="btn-generate" id="generateBtn">
                             <svg class="sparkle-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
@@ -73,7 +85,6 @@
 
             <div id="status" class="status-msg"></div>
 
-            <!-- Flashcard Section Feed -->
             <section class="cards-section">
                 <div class="cards-toolbar">
                     <div class="cards-count" id="cardsCount">Active Deck Cards Arena</div>

@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from google import genai
-
+from pypdf import PdfReader
 from models import db, Flashcard, Deck  
 
 load_dotenv()
@@ -51,40 +51,58 @@ def generate_flashcards(text):
     except Exception as e:
         print("Gemini API Error details:", str(e))
         return []
-
-
+    
 @app.route("/generate", methods=["POST"])
 def generate():
     try:
-        data = request.get_json()
-        text = data.get("text")
-        
-        # Capture the optional deck_id sent by the frontend
-        current_context_deck_id = data.get("deck_id")
+        text = ""
+        current_context_deck_id = None
+        if request.content_type and "multipart/form-data" in request.content_type:
+            current_context_deck_id = request.form.get("deck_id")
+            
+            # Clean up string text representations of null targets from Javascript
+            if current_context_deck_id == "null" or not current_context_deck_id:
+                current_context_deck_id = None
+            else:
+                current_context_deck_id = int(current_context_deck_id)
 
-        if not text:
-            return jsonify({"error": "No text provided"}), 400
+            if "file" in request.files:
+                uploaded_file = request.files["file"]
+                if uploaded_file.filename != "":
+                    # Ingest PDF text layers byte blocks straight in-memory
+                    reader = PdfReader(uploaded_file)
+                    extracted_pages = []
+                    for page in reader.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            extracted_pages.append(page_text)
+                    text = "\n".join(extracted_pages)
+
+        else:
+            data = request.get_json() or {}
+            text = data.get("text", "")
+            current_context_deck_id = data.get("deck_id")
+
+        if not text or not text.strip():
+            return jsonify({"error": "No legible source literature or text note context found."}), 400
 
         target_deck = None
 
         if current_context_deck_id:
-
             target_deck = Deck.query.get(current_context_deck_id)
             if not target_deck:
                 return jsonify({"error": "Original deck not found"}), 404
             print(f"Adding cards to EXISTING Deck ID: {target_deck.id}")
         else:
-           
             target_deck = Deck(title=f"AI Generated Deck ({datetime.utcnow().strftime('%H:%M')})")
             db.session.add(target_deck)
-            db.session.commit() # Committing assigns an ID immediately
+            db.session.commit() # Assigns ID instantly
             print(f"Spawning NEW Deck ID: {target_deck.id}")
-
 
         cards_data = generate_flashcards(text)
 
         if not cards_data:
-            return jsonify({"error": "Failed to generate flashcards from the text"}), 500
+            return jsonify({"error": "Failed to generate flashcards from the text context"}), 500
 
         saved_cards = []
         for item in cards_data:
@@ -129,20 +147,49 @@ def get_deck_cards(deck_id):
         if not deck:
             return jsonify({"error": "Deck not found"}), 404
             
-        cards_list = [
-            {
+        current_time = datetime.utcnow()
+        
+        total_cards = len(deck.cards)
+        memorized_cards = 0
+        due_cards_count = 0
+        forgotten_cards_count = 0  # Track forgotten cards
+        
+        cards_list = []
+        for c in deck.cards:
+            is_due = True
+            if c.next_review and c.next_review > current_time:
+                is_due = False
+                
+            if c.interval > 1 and not is_due:
+                memorized_cards += 1
+            if is_due:
+                due_cards_count += 1
+            # If the interval is reset to 1 but it's pushed to the future, it was forgotten today
+            if c.interval == 1 and not is_due and c.next_review:
+                forgotten_cards_count += 1
+                
+            cards_list.append({
                 "id": c.id, 
                 "question": c.question, 
                 "answer": c.answer,
                 "interval": c.interval,
-    
                 "next_review": c.next_review.strftime("%Y-%m-%d %H:%M:%S") if c.next_review else None
-            } for c in deck.cards
-        ]
-        return jsonify({"cards": cards_list})
+            })
+            
+        completion_rate = round((memorized_cards / total_cards) * 100) if total_cards > 0 else 0
+        
+        return jsonify({
+            "cards": cards_list,
+            "analytics": {
+                "total": total_cards,
+                "memorized": memorized_cards,
+                "due": due_cards_count,
+                "forgotten": forgotten_cards_count,  # Added to payload
+                "progress_percent": completion_rate
+            }
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 @app.route("/flashcards/<int:card_id>", methods=["DELETE"])
 def delete_flashcard(card_id):
     try:

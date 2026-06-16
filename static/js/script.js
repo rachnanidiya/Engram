@@ -4,6 +4,42 @@ window.onload = function() {
     loadSavedDecks();
 };
 
+/* ── PHASE 2: HANDLE PDF FILE SELECT UI CHANGE ── */
+function handleFileSelection() {
+    const fileInput = document.getElementById("pdfFileInput");
+    const label = document.getElementById("fileSelectedLabel");
+    const textInput = document.getElementById("textInput");
+    const uploadBtnText = document.getElementById("uploadButtonText");
+
+    if (fileInput && fileInput.files.length > 0) {
+        const fileName = fileInput.files[0].name;
+        if (label) {
+            label.innerText = `📄 ${fileName}`;
+            label.style.display = "inline-block";
+        }
+        if (uploadBtnText) uploadBtnText.innerText = "Change Document";
+        
+        if (textInput) {
+            textInput.value = "";
+            textInput.placeholder = "PDF active. Click 'Generate Cards' to begin parsing!";
+            textInput.disabled = true;
+        }
+    }
+}
+
+/* ── SHOW/HIDE LOADING OVERLAY UTILITIES ── */
+function showLoading(msg) {
+    const overlay = document.getElementById("loadingOverlay");
+    const subtitle = document.getElementById("loadingSubtitle");
+    if (subtitle && msg) subtitle.innerText = msg;
+    if (overlay) overlay.classList.add("active");
+}
+
+function hideLoading() {
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) overlay.classList.remove("active");
+}
+
 /* ── DECK MODE RESET ── */
 function createNewDeckMode() {
     currentDeckId = null;
@@ -12,10 +48,12 @@ function createNewDeckMode() {
     const textInput = document.getElementById("textInput");
     const statusDiv = document.getElementById("status");
     const heading = document.getElementById("deckTitleHeading");
+    const panel = document.getElementById("analyticsPanel");
 
     if (container) container.innerHTML = "";
     if (textInput) {
         textInput.value = "";
+        textInput.placeholder = "Paste your notes, textbook excerpts, or any concept text here...";
         textInput.disabled = false;
     }
     if (statusDiv) {
@@ -23,9 +61,10 @@ function createNewDeckMode() {
         statusDiv.className = "status-msg";
     }
     if (heading) heading.innerText = "AI Flashcard Studio";
+    if (panel) panel.style.display = "none";
 }
 
-/* ── VIEW A DECK CONTENT ── */
+/* ── VIEW A DECK CONTENT WITH ANALYTICS INTEGRATION ── */
 async function viewDeck(deckId) {
     currentDeckId = deckId;
     const container = document.getElementById("flashcardContainer");
@@ -35,7 +74,6 @@ async function viewDeck(deckId) {
     if (container) container.innerHTML = "Opening deck content...";
     if (filterCheckbox) filterCheckbox.checked = false;
 
-    // Highlight active deck element row inside sidebar tracking feed
     document.querySelectorAll(".deck-item").forEach(el => el.classList.remove("active"));
     const activeDeckEl = document.getElementById(`deck-item-${deckId}`);
     if (activeDeckEl) activeDeckEl.classList.add("active");
@@ -43,13 +81,22 @@ async function viewDeck(deckId) {
     try {
         const response = await fetch(`/decks/${deckId}/cards`);
         const data = await response.json();
+        
         if (response.ok && data.cards) {
             const targetRow = document.getElementById(`deck-item-${deckId}`) || activeDeckEl;
             if (targetRow && heading) {
                 const titleText = targetRow.querySelector("span")?.innerText || `Deck #${deckId}`;
                 heading.innerText = titleText.replace("📁", "").trim();
-            } else if (heading) {
-                heading.innerText = `Deck #${deckId}`;
+            }
+
+            const panel = document.getElementById("analyticsPanel");
+            if (data.analytics && panel) {
+                panel.style.display = "block";
+                document.getElementById("statTotal").innerText = data.analytics.total;
+                document.getElementById("statMemorized").innerText = data.analytics.memorized;
+                document.getElementById("statDue").innerText = data.analytics.due;
+                document.getElementById("statForgotten").innerText = data.analytics.forgotten;
+                document.getElementById("statProgress").innerText = `${data.analytics.progress_percent}%`;
             }
 
             renderCardsToScreen(data.cards, false);
@@ -61,36 +108,62 @@ async function viewDeck(deckId) {
     }
 }
 
-/* ── GENERATE CARDS LOOP ── */
+/* ── GENERATE CARDS LOOP (WITH LOADING OVERLAY COUPLING) ── */
 async function generate() {
     const textInput = document.getElementById("textInput");
+    const fileInput = document.getElementById("pdfFileInput");
     const btn = document.getElementById("generateBtn");
     const statusDiv = document.getElementById("status");
     const heading = document.getElementById("deckTitleHeading");
+    const fileLabel = document.getElementById("fileSelectedLabel");
+    const uploadBtnText = document.getElementById("uploadButtonText");
 
-    if (!textInput || !textInput.value.trim()) {
-        alert("Please enter some text notes first!");
+    const hasFile = fileInput && fileInput.files.length > 0;
+    const hasText = textInput && textInput.value.trim().length > 0;
+
+    if (!hasFile && !hasText) {
+        alert("Please enter notes or choose a valid study PDF document first!");
         return;
     }
 
     if (btn) btn.disabled = true;
     if (textInput) textInput.disabled = true;
-    if (statusDiv) statusDiv.innerText = "Generating flashcards with Gemini AI… ✨";
+    
+    // Trigger the premium loader layout view
+    const loadingMessage = hasFile ? "Extracting document text layers and modeling card schemas..." : "Processing literature arrays with Gemini AI... ✨";
+    showLoading(loadingMessage);
 
     try {
-        const payload = { text: textInput.value, deck_id: currentDeckId };
-        const response = await fetch("/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
+        let response;
+        
+        if (hasFile) {
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            formData.append("deck_id", currentDeckId);
+            
+            response = await fetch("/generate", {
+                method: "POST",
+                body: formData
+            });
+        } else {
+            response = await fetch("/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: textInput.value, deck_id: currentDeckId })
+            });
+        }
 
         const result = await response.json();
 
         if (response.ok && result.cards) {
             loadSavedDecks();
             
+            if (fileInput) fileInput.value = "";
+            if (fileLabel) fileLabel.style.display = "none";
+            if (uploadBtnText) uploadBtnText.innerText = "Upload PDF";
+            
             textInput.value = "";
+            textInput.placeholder = "Paste your notes, textbook excerpts, or any concept text here...";
             textInput.disabled = false;
 
             if (currentDeckId) {
@@ -119,6 +192,7 @@ async function generate() {
         if (textInput) textInput.disabled = false;
     } finally {
         if (btn) btn.disabled = false;
+        hideLoading(); // Turn off the overlay lock safely
     }
 }
 
@@ -173,7 +247,7 @@ function renderCardsToScreen(cardsArray, append) {
             }
         }
 
-        if (card.interval > 1 && !isDue) {
+        if (!isDue) {
             startingStyle = "style='opacity: 0.22; pointer-events: none;'";
         }
 
@@ -232,6 +306,8 @@ async function sendReview(cardId, userStatus) {
                 cardVisualBox.style.pointerEvents = "none";
                 if (userStatus === "correct") {
                     cardVisualBox.setAttribute("data-interval", "3");
+                } else if (userStatus === "wrong") {
+                    cardVisualBox.setAttribute("data-interval", "1");
                 }
             }
         }
