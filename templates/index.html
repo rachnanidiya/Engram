@@ -3,36 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Flashcard Dashboard</title>
+    <title>Recall — AI Flashcard Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-    <div class="sidebar">
-        <h3>🗂️ Saved Decks</h3>
-        <button onclick="createNewDeckMode()" class="btn-create-deck">
-            ➕ Create New Deck
-        </button>
-        <div id="decksList">Loading historical saves...</div>
-    </div>
+    <!-- Tactical Ambiance Vector Shell Systems -->
+    <div class="noise-overlay"></div>
+    <div class="glow-orb orb-primary"></div>
+    <div class="glow-orb orb-secondary"></div>
+    <div class="glow-orb orb-tertiary"></div>
 
-    <div class="main-content">
-        <h1>📚 AI Flashcard Studio</h1>
-        <div class="input-container">
-            <textarea id="textInput" rows="4" placeholder="Paste structural data here to mint a brand NEW deck..."></textarea>
-            <button onclick="generate()">Generate Flashcards</button>
-        </div>
-        
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px;">
-            <h2 id="deckTitleHeading" style="margin: 0;">Your Flashcards:</h2>
-            
-            <label id="filterContainer" style="display: none; font-weight: bold; font-size: 14px; cursor: pointer;">
-                <input type="checkbox" id="dueFilterCheckbox" onchange="filterCardsOnScreen()"> 
-                🎯 Show Only Due Today
-            </label>
-        </div>
+    <div class="app-shell">
 
-        <div id="flashcardContainer"></div>
+        <!-- ── SIDEBAR NAVIGATION ── -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 20V2h13.5v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    <span class="brand-name">Recall</span>
+                </div>
+
+                <button onclick="createNewDeckMode()" class="btn-new-deck">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Deck
+                </button>
+            </div>
+
+            <div class="sidebar-section-label">Your Decks</div>
+
+            <div id="decksList" class="decks-list">
+                <div class="deck-loading">Loading decks...</div>
+            </div>
+        </aside>
+
+        <!-- ── MAIN CONTENT WORKBENCH ── -->
+        <main class="main">
+
+            <header class="page-header">
+                <div class="page-header-left">
+                    <h1 class="page-title" id="deckTitleHeading">AI Flashcard Studio</h1>
+                    <p class="page-sub">Paste your notes — get study-ready flashcards instantly</p>
+                </div>
+                <div class="header-badge">
+                    <span class="pulse-dot"></span>
+                    Gemini 2.5 Pro
+                </div>
+            </header>
+
+            <!-- Inputs Shiny Console Box -->
+            <section class="input-panel-wrapper">
+                <div class="input-panel">
+                    <textarea id="textInput" class="note-input" rows="4" placeholder="Paste your notes, textbook excerpts, or any concept text here..."></textarea>
+                    <div class="input-footer">
+                        <div class="input-hint d-flex align-items-center gap-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            <span>Tip: More context = better cards</span>
+                        </div>
+                        <button onclick="generate()" class="btn-generate" id="generateBtn">
+                            <svg class="sparkle-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            <span>Generate Cards</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <div id="status" class="status-msg"></div>
+
+            <!-- Flashcard Section Feed -->
+            <section class="cards-section">
+                <div class="cards-toolbar">
+                    <div class="cards-count" id="cardsCount">Active Deck Cards Arena</div>
+                    <label id="filterContainer" class="due-toggle">
+                        <input type="checkbox" id="dueFilterCheckbox" onchange="filterCardsOnScreen()">
+                        <span class="toggle-track">
+                            <span class="toggle-thumb"></span>
+                        </span>
+                        <span class="toggle-label">Due only</span>
+                    </label>
+                </div>
+                <div id="flashcardContainer" class="cards-grid"></div>
+            </section>
+
+        </main>
     </div>
 
     <script src="/static/js/script.js"></script>

@@ -4,6 +4,7 @@ window.onload = function() {
     loadSavedDecks();
 };
 
+/* ── DECK MODE RESET ── */
 function createNewDeckMode() {
     currentDeckId = null;
     
@@ -11,32 +12,46 @@ function createNewDeckMode() {
     const textInput = document.getElementById("textInput");
     const statusDiv = document.getElementById("status");
     const heading = document.getElementById("deckTitleHeading");
-    const filterContainer = document.getElementById("filterContainer");
 
     if (container) container.innerHTML = "";
-    if (textInput) textInput.value = "";
-    if (statusDiv) statusDiv.innerText = "";
-    if (heading) heading.innerText = "Generating NEW Deck Studio";
-    if (filterContainer) filterContainer.style.display = "none";
+    if (textInput) {
+        textInput.value = "";
+        textInput.disabled = false;
+    }
+    if (statusDiv) {
+        statusDiv.innerText = "";
+        statusDiv.className = "status-msg";
+    }
+    if (heading) heading.innerText = "AI Flashcard Studio";
 }
 
+/* ── VIEW A DECK CONTENT ── */
 async function viewDeck(deckId) {
     currentDeckId = deckId;
     const container = document.getElementById("flashcardContainer");
     const heading = document.getElementById("deckTitleHeading");
     const filterCheckbox = document.getElementById("dueFilterCheckbox");
-    const filterContainer = document.getElementById("filterContainer");
     
     if (container) container.innerHTML = "Opening deck content...";
-    if (heading) heading.innerText = `Viewing Deck #${deckId}`;
-
     if (filterCheckbox) filterCheckbox.checked = false;
-    if (filterContainer) filterContainer.style.display = "block";
+
+    // Highlight active deck element row inside sidebar tracking feed
+    document.querySelectorAll(".deck-item").forEach(el => el.classList.remove("active"));
+    const activeDeckEl = document.getElementById(`deck-item-${deckId}`);
+    if (activeDeckEl) activeDeckEl.classList.add("active");
 
     try {
         const response = await fetch(`/decks/${deckId}/cards`);
         const data = await response.json();
         if (response.ok && data.cards) {
+            const targetRow = document.getElementById(`deck-item-${deckId}`) || activeDeckEl;
+            if (targetRow && heading) {
+                const titleText = targetRow.querySelector("span")?.innerText || `Deck #${deckId}`;
+                heading.innerText = titleText.replace("📁", "").trim();
+            } else if (heading) {
+                heading.innerText = `Deck #${deckId}`;
+            }
+
             renderCardsToScreen(data.cards, false);
         } else {
             if (container) container.innerHTML = "Could not parse deck cards content.";
@@ -46,22 +61,24 @@ async function viewDeck(deckId) {
     }
 }
 
+/* ── GENERATE CARDS LOOP ── */
 async function generate() {
-    const textInput = document.getElementById("textInput").value;
-    const container = document.getElementById("flashcardContainer");
+    const textInput = document.getElementById("textInput");
+    const btn = document.getElementById("generateBtn");
     const statusDiv = document.getElementById("status");
     const heading = document.getElementById("deckTitleHeading");
-    const filterContainer = document.getElementById("filterContainer");
 
-    if (!textInput.trim()) {
-        alert("Please enter some text first!");
+    if (!textInput || !textInput.value.trim()) {
+        alert("Please enter some text notes first!");
         return;
     }
 
-    if (statusDiv) statusDiv.innerText = "Processing text with Gemini AI... please wait... ✨";
+    if (btn) btn.disabled = true;
+    if (textInput) textInput.disabled = true;
+    if (statusDiv) statusDiv.innerText = "Generating flashcards with Gemini AI… ✨";
 
     try {
-        const payload = { text: textInput, deck_id: currentDeckId };
+        const payload = { text: textInput.value, deck_id: currentDeckId };
         const response = await fetch("/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -72,26 +89,40 @@ async function generate() {
 
         if (response.ok && result.cards) {
             loadSavedDecks();
-            document.getElementById("textInput").value = "";
+            
+            textInput.value = "";
+            textInput.disabled = false;
 
             if (currentDeckId) {
-                if (statusDiv) statusDiv.innerText = `Success! Generated ${result.cards.length} NEW cards inside this deck.`;
+                if (statusDiv) statusDiv.innerText = `Success! Generated ${result.cards.length} new cards inside this deck.`;
                 renderCardsToScreen(result.cards, true);
             } else {
-                if (statusDiv) statusDiv.innerText = `Success! Minted fresh Deck #${result.deck_id}.`;
-                if (heading) heading.innerText = `Viewing Deck #${result.deck_id}`;
+                if (statusDiv) statusDiv.innerText = `Success! Minted fresh deck container.`;
                 currentDeckId = result.deck_id;
-                if (filterContainer) filterContainer.style.display = "block";
+                
+                setTimeout(() => {
+                    const freshDeckEl = document.getElementById(`deck-item-${result.deck_id}`);
+                    if (heading && freshDeckEl) {
+                        const titleText = freshDeckEl.querySelector("span")?.innerText || `Deck #${result.deck_id}`;
+                        heading.innerText = titleText.replace("📁", "").trim();
+                    }
+                }, 200);
+
                 renderCardsToScreen(result.cards, false);
             }
         } else {
             if (statusDiv) statusDiv.innerText = "Error: " + (result.error || "Failed to make cards");
+            if (textInput) textInput.disabled = false;
         }
     } catch (error) {
         if (statusDiv) statusDiv.innerText = "An error occurred while connecting to the server.";
+        if (textInput) textInput.disabled = false;
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 
+/* ── SIDEBAR DATA RETRIEVAL ── */
 async function loadSavedDecks() {
     const listContainer = document.getElementById("decksList");
     if (!listContainer) return;
@@ -101,17 +132,17 @@ async function loadSavedDecks() {
         const data = await response.json();
         if (response.ok && data.decks) {
             if (data.decks.length === 0) {
-                listContainer.innerHTML = "<p style='color: #bdc3c7; font-size: 14px;'>No saves.</p>";
+                listContainer.innerHTML = "<div class='deck-loading'>No decks yet. Create one above!</div>";
                 return;
             }
             let listHTML = "";
-           data.decks.forEach(deck => {
+            data.decks.forEach(deck => {
                 listHTML += `
-                    <div class="deck-item" onclick="viewDeck(${deck.id})">
+                    <div class="deck-item ${deck.id === currentDeckId ? 'active' : ''}" id="deck-item-${deck.id}" onclick="viewDeck(${deck.id})">
                         <span>📁 ${deck.title}</span>
                         <div class="deck-controls">
-                            <button class="deck-action-btn" onclick="event.stopPropagation(); renameDeck(${deck.id}, '${deck.title}')">✏️</button>
-                            <button class="deck-action-btn" onclick="event.stopPropagation(); deleteDeck(${deck.id})">🗑️</button>
+                            <button class="deck-action-btn" onclick="event.stopPropagation(); renameDeck(${deck.id}, '${deck.title}')" title="Rename">✏️</button>
+                            <button class="deck-action-btn" onclick="event.stopPropagation(); deleteDeck(${deck.id})" title="Delete">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -123,6 +154,7 @@ async function loadSavedDecks() {
     }
 }
 
+/* ── RENDER FLASHCARDS TO CANVAS ── */
 function renderCardsToScreen(cardsArray, append) {
     const container = document.getElementById("flashcardContainer");
     if (!container) return;
@@ -142,11 +174,10 @@ function renderCardsToScreen(cardsArray, append) {
         }
 
         if (card.interval > 1 && !isDue) {
-            startingStyle = "style='opacity: 0.2; pointer-events: none;'";
+            startingStyle = "style='opacity: 0.22; pointer-events: none;'";
         }
 
-        // Format the date label nicely (e.g., "📅 Jun 15")
-        let dateLabel = "Ready";
+        let dateLabel = "Ready to Review";
         if (card.next_review) {
             const d = new Date(card.next_review);
             dateLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -155,23 +186,18 @@ function renderCardsToScreen(cardsArray, append) {
         cardHTML += `
             <div class="flashcard-wrapper" id="card-box-${card.id}" data-interval="${card.interval || 1}" ${startingStyle} onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
                 <div class="flashcard">
-                    
                     <div class="card-face card-front">
                         <span class="due-badge">📅 ${dateLabel}</span>
-                        
                         <button class="delete-btn" onclick="event.stopPropagation(); deleteCard(${card.id})">🗑️</button>
-                        <div style="margin-top: 20px;">${card.question}</div>
+                        <p class="card-question">${card.question}</p>
                     </div>
-                    
                     <div class="card-face card-back">
-                        <p class="card-answer-text">${card.answer}</p>
-                        
+                        <div class="card-answer-text">${card.answer}</div>
                         <div class="action-tray">
                             <button class="btn-action btn-forgot" onclick="event.stopPropagation(); sendReview(${card.id}, 'wrong')">❌ Forgot</button>
                             <button class="btn-action btn-knew" onclick="event.stopPropagation(); sendReview(${card.id}, 'correct')">✅ Knew It</button>
                         </div>
                     </div>
-
                 </div>
             </div>
         `;
@@ -186,15 +212,9 @@ function renderCardsToScreen(cardsArray, append) {
 
 function filterCardsOnScreen() {
     const isChecked = document.getElementById("dueFilterCheckbox").checked;
-    const cardBoxes = document.querySelectorAll(".flashcard-wrapper");
-
-    cardBoxes.forEach(box => {
+    document.querySelectorAll(".flashcard-wrapper").forEach(box => {
         const interval = parseInt(box.getAttribute("data-interval"));
-        if (isChecked && interval > 1) {
-            box.style.display = "none";
-        } else {
-            box.style.display = "block";
-        }
+        box.style.display = (isChecked && interval > 1) ? "none" : "";
     });
 }
 
@@ -208,7 +228,7 @@ async function sendReview(cardId, userStatus) {
         });
         if (response.ok) {
             if (cardVisualBox) {
-                cardVisualBox.style.opacity = "0.2";
+                cardVisualBox.style.opacity = "0.22";
                 cardVisualBox.style.pointerEvents = "none";
                 if (userStatus === "correct") {
                     cardVisualBox.setAttribute("data-interval", "3");
@@ -216,7 +236,7 @@ async function sendReview(cardId, userStatus) {
             }
         }
     } catch (error) {
-        console.error("Could not connect to backend server:", error);
+        console.error("Review sync fault:", error);
     }
 }
 
@@ -225,15 +245,12 @@ async function deleteCard(cardId) {
     const cardVisualBox = document.getElementById(`card-box-${cardId}`);
     try {
         const response = await fetch(`/flashcards/${cardId}`, { method: "DELETE" });
-        if (response.ok) {
-            if (cardVisualBox) cardVisualBox.remove();
-        }
+        if (response.ok && cardVisualBox) cardVisualBox.remove();
     } catch (error) {
-        console.error("Network connectivity fault:", error);
+        console.error("Card drop sync fault:", error);
     }
 }
 
-// Short, clean function to handle folder renaming
 async function renameDeck(deckId, oldTitle) {
     const newTitle = prompt("Enter a new title for this deck:", oldTitle);
     if (!newTitle || !newTitle.trim()) return;
@@ -245,21 +262,16 @@ async function renameDeck(deckId, oldTitle) {
     });
 
     if (response.ok) {
-        loadSavedDecks(); // Refresh the sidebar text labels instantly
-        document.getElementById("deckTitleHeading").innerText = `Viewing Deck: ${newTitle.trim()}`;
+        loadSavedDecks();
+        document.getElementById("deckTitleHeading").innerText = newTitle.trim();
     }
 }
 
-// Short, clean function to handle folder deletion
 async function deleteDeck(deckId) {
     if (!confirm("Delete this entire deck permanently?")) return;
-
-    const response = await fetch(`/decks/${deckId}`, {
-        method: "DELETE"
-    });
-
+    const response = await fetch(`/decks/${deckId}`, { method: "DELETE" });
     if (response.ok) {
-        loadSavedDecks(); // Refresh the sidebar list immediately
-        createNewDeckMode(); // Reset workspace view to fresh state
+        loadSavedDecks();
+        createNewDeckMode();
     }
 }
