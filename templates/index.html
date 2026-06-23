@@ -6,6 +6,7 @@
     <title>Recall — AI Flashcard Studio</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -114,11 +115,19 @@
                 <div class="cards-toolbar">
                     <div class="cards-count" id="cardsCount">Active Deck Cards Arena</div>
                     
-                    <div class="study-mode-container" style="display: flex; align-items: center; gap: 12px;">
-                        <button id="exportDeckBtn" class="btn-action-static" onclick="exportActiveDeck()" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-2); padding: 6px 12px; font-size: 12px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Export Backup
-                        </button>
+                    <<div class="study-mode-container" style="display: flex; align-items: center; gap: 12px;">
+                        
+                        <div id="exportGroup" style="display: flex; gap: 6px;">
+                            <button id="exportDeckBtn" class="btn-action-static" onclick="exportActiveDeck()" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-2); padding: 6px 12px; font-size: 12px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export TXT
+                            </button>
+
+                            <button id="exportPDFBtn" class="btn-action-static" onclick="exportActiveDeckAsPDF()" style="display: none; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: #a5b4fc; padding: 6px 12px; font-size: 12px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 2px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                                Export PDF
+                            </button>
+                        </div>
 
                         <div class="mode-pill">
                             <button id="modeFlipBtn" class="mode-btn active" onclick="switchStudyMode('flip')">📇 Flip Mode</button>
