@@ -69,8 +69,8 @@
                     <div class="input-footer">
                         <div class="input-hint d-flex align-items-center gap-1">
                             <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;" onchange="handleFileSelection()">
-                            <button type="button" onclick="document.getElementById('pdfFileInput').click()" class="btn-action" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-2); max-width: fit-content; padding: 6px 12px;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                            <button type="button" onclick="document.getElementById('pdfFileInput').click()" class="btn-action-static" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-2); padding: 6px 12px; font-size: 12px; border-radius: var(--radius-sm); cursor: pointer;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
                                 <span id="uploadButtonText">Upload PDF</span>
                             </button>
                             <span id="fileSelectedLabel" style="font-size: 12px; color: var(--success); display: none;"></span>
@@ -85,16 +85,54 @@
 
             <div id="status" class="status-msg"></div>
 
+            <div id="analyticsPanel" class="analytics-dashboard" style="display: none; margin-bottom: 20px;">
+                <div class="analytics-grid">
+                    <div class="stat-box">
+                        <span class="stat-label">Total Cards</span>
+                        <span id="statTotal" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Memorized</span>
+                        <span id="statMemorized" class="stat-value text-success">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Due Today</span>
+                        <span id="statDue" class="stat-value text-accent">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Forgotten</span>
+                        <span id="statForgotten" class="stat-value text-danger">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Mastery Progress</span>
+                        <span id="statProgress" class="stat-value text-gradient">0%</span>
+                    </div>
+                </div>
+            </div>
+
             <section class="cards-section">
                 <div class="cards-toolbar">
                     <div class="cards-count" id="cardsCount">Active Deck Cards Arena</div>
-                    <label id="filterContainer" class="due-toggle">
-                        <input type="checkbox" id="dueFilterCheckbox" onchange="filterCardsOnScreen()">
-                        <span class="toggle-track">
-                            <span class="toggle-thumb"></span>
-                        </span>
-                        <span class="toggle-label">Due only</span>
-                    </label>
+                    
+                    <div class="study-mode-container" style="display: flex; align-items: center; gap: 12px;">
+                        <button id="exportDeckBtn" class="btn-action-static" onclick="exportActiveDeck()" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--text-2); padding: 6px 12px; font-size: 12px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export Backup
+                        </button>
+
+                        <div class="mode-pill">
+                            <button id="modeFlipBtn" class="mode-btn active" onclick="switchStudyMode('flip')">📇 Flip Mode</button>
+                            <button id="modeQuizBtn" class="mode-btn" onclick="switchStudyMode('quiz')">📝 Quiz Mode</button>
+                        </div>
+                        
+                        <label id="filterContainer" class="due-toggle">
+                            <input type="checkbox" id="dueFilterCheckbox" onchange="filterCardsOnScreen()">
+                            <span class="toggle-track">
+                                <span class="toggle-thumb"></span>
+                            </span>
+                            <span class="toggle-label">Due only</span>
+                        </label>
+                    </div>
                 </div>
                 <div id="flashcardContainer" class="cards-grid"></div>
             </section>
