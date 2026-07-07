@@ -706,3 +706,59 @@ async function exportActiveDeckAsPDF() {
   // Execute Native OS download attachment write stream hook
   doc.save(sanitizedFileName);
 }
+ let mode = 'login';
+
+        function switchTab(targetMode) {
+            mode = targetMode;
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const submitBtn = document.getElementById('submitBtn');
+            const errorDiv = document.getElementById('authError');
+
+            errorDiv.style.display = 'none';
+
+            if (mode === 'register') {
+                tabRegister.classList.add('active');
+                tabLogin.classList.remove('active');
+                submitBtn.innerText = 'Create Account';
+            } else {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                submitBtn.innerText = 'Sign In';
+            }
+        }
+
+        async function handleAuth(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+            const errorDiv = document.getElementById('authError');
+            const submitBtn = document.getElementById('submitBtn');
+
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+
+            const endpoint = mode === 'register' ? '/register' : '/login';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    errorDiv.innerText = data.error || 'Authentication failed.';
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                errorDiv.innerText = 'Server communication error. Please try again.';
+                errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+            }
+        }

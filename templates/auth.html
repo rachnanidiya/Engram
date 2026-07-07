@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engram — Authenticate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+</head>
+<body>
+
+    <div class="noise-overlay"></div>
+    <div class="glow-orb orb-primary"></div>
+    <div class="glow-orb orb-secondary"></div>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <h2 class="page-title" style="font-size: 28px; margin-bottom: 6px;">Engram</h2>
+                <p class="page-sub">Your intelligent flashcard companion</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button id="tabLogin" class="auth-tab-btn active" onclick="switchTab('login')">Sign In</button>
+                <button id="tabRegister" class="auth-tab-btn" onclick="switchTab('register')">Create Account</button>
+            </div>
+
+            <div id="authError" class="auth-error"></div>
+
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="auth-input" placeholder="Enter your username" required autocomplete="username">
+                </div>
+                <div class="form-group" style="margin-bottom: 28px;">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="auth-input" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" id="submitBtn" class="auth-submit-btn">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
