@@ -254,7 +254,7 @@ async function viewDeck(deckId) {
   const filterCheckbox = document.getElementById("dueFilterCheckbox");
   const exportBtn = document.getElementById("exportDeckBtn");
   const exportPdfBtn = document.getElementById("exportPDFBtn");
-  
+
   if (container) container.innerHTML = "Opening deck content...";
   if (filterCheckbox) filterCheckbox.checked = false;
 
@@ -294,10 +294,12 @@ async function viewDeck(deckId) {
 
       // FIXED: Safely toggling export buttons AFTER data is guaranteed to exist
       if (exportBtn) {
-        exportBtn.style.display = data.cards.length > 0 ? "inline-flex" : "none";
+        exportBtn.style.display =
+          data.cards.length > 0 ? "inline-flex" : "none";
       }
       if (exportPdfBtn) {
-        exportPdfBtn.style.display = data.cards.length > 0 ? "inline-flex" : "none";
+        exportPdfBtn.style.display =
+          data.cards.length > 0 ? "inline-flex" : "none";
       }
 
       renderCardsToScreen(data.cards, false);
@@ -366,7 +368,7 @@ async function generate() {
       if (fileInput) fileInput.value = "";
       if (fileLabel) fileLabel.style.display = "none";
       if (uploadBtnText) uploadBtnText.innerText = "Upload PDF";
-      
+
       textInput.value = "";
       textInput.placeholder =
         "Paste your notes, textbook excerpts, or any concept text here...";
@@ -706,59 +708,112 @@ async function exportActiveDeckAsPDF() {
   // Execute Native OS download attachment write stream hook
   doc.save(sanitizedFileName);
 }
- let mode = 'login';
+let mode = "login";
 
-        function switchTab(targetMode) {
-            mode = targetMode;
-            const tabLogin = document.getElementById('tabLogin');
-            const tabRegister = document.getElementById('tabRegister');
-            const submitBtn = document.getElementById('submitBtn');
-            const errorDiv = document.getElementById('authError');
+function switchTab(targetMode) {
+  mode = targetMode;
+  const tabLogin = document.getElementById("tabLogin");
+  const tabRegister = document.getElementById("tabRegister");
+  const submitBtn = document.getElementById("submitBtn");
+  const errorDiv = document.getElementById("authError");
 
-            errorDiv.style.display = 'none';
+  errorDiv.style.display = "none";
 
-            if (mode === 'register') {
-                tabRegister.classList.add('active');
-                tabLogin.classList.remove('active');
-                submitBtn.innerText = 'Create Account';
-            } else {
-                tabLogin.classList.add('active');
-                tabRegister.classList.remove('active');
-                submitBtn.innerText = 'Sign In';
-            }
-        }
+  if (mode === "register") {
+    tabRegister.classList.add("active");
+    tabLogin.classList.remove("active");
+    submitBtn.innerText = "Create Account";
+  } else {
+    tabLogin.classList.add("active");
+    tabRegister.classList.remove("active");
+    submitBtn.innerText = "Sign In";
+  }
+}
 
-        async function handleAuth(event) {
-            event.preventDefault();
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
-            const errorDiv = document.getElementById('authError');
-            const submitBtn = document.getElementById('submitBtn');
+async function handleAuth(event) {
+  event.preventDefault();
+  const usernameInput = document.getElementById("username").value;
+  const passwordInput = document.getElementById("password").value;
+  const errorDiv = document.getElementById("authError");
+  const submitBtn = document.getElementById("submitBtn");
 
-            errorDiv.style.display = 'none';
-            submitBtn.disabled = true;
+  errorDiv.style.display = "none";
+  submitBtn.disabled = true;
 
-            const endpoint = mode === 'register' ? '/register' : '/login';
+  const endpoint = mode === "register" ? "/register" : "/login";
 
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
-                });
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: usernameInput,
+        password: passwordInput,
+      }),
+    });
 
-                const data = await response.json();
+    const data = await response.json();
 
-                if (response.ok) {
-                    window.location.href = '/';
-                } else {
-                    errorDiv.innerText = data.error || 'Authentication failed.';
-                    errorDiv.style.display = 'block';
-                    submitBtn.disabled = false;
-                }
-            } catch (err) {
-                errorDiv.innerText = 'Server communication error. Please try again.';
-                errorDiv.style.display = 'block';
-                submitBtn.disabled = false;
-            }
-        }
+    if (response.ok) {
+      window.location.href = "/";
+    } else {
+      errorDiv.innerText = data.error || "Authentication failed.";
+      errorDiv.style.display = "block";
+      submitBtn.disabled = false;
+    }
+  } catch (err) {
+    errorDiv.innerText = "Server communication error. Please try again.";
+    errorDiv.style.display = "block";
+    submitBtn.disabled = false;
+  }
+}
+
+async function openProfileDashboard() {
+  const modal = document.getElementById("profileModal");
+  const streakEl = document.getElementById("profileStreak");
+  const decksEl = document.getElementById("profileDecks");
+  const chartContainer = document.getElementById("barChartContainer");
+
+  if (!modal || !chartContainer) return;
+
+  chartContainer.innerHTML = "Compiling performance indexes...";
+  modal.classList.add("active");
+
+  try {
+    const response = await fetch("/api/analytics/profile");
+    const data = await response.json();
+
+    if (response.ok) {
+      streakEl.innerText = `${data.streak} Days`;
+      decksEl.innerText = data.total_decks;
+
+      chartContainer.innerHTML = "";
+      data.chart.forEach((row) => {
+        const total = row.correct + row.wrong;
+        const correctWidth = total > 0 ? (row.correct / total) * 100 : 0;
+        const wrongWidth = total > 0 ? (row.wrong / total) * 100 : 0;
+
+        chartContainer.innerHTML += `
+                    <div style="display: flex; align-items: center; gap: 12px; font-size: 12px;">
+                        <span style="width: 50px; color: var(--text-2); font-weight:500;">${row.day}</span>
+                        <div style="flex: 1; height: 12px; background: rgba(255,255,255,0.02); border-radius: 6px; overflow: hidden; display: flex; border: 1px solid rgba(255,255,255,0.02);">
+                            ${
+                              total === 0
+                                ? '<div style="width:100%; background: transparent;"></div>'
+                                : `
+                                <div style="width: ${correctWidth}%; background: var(--success); transition: width 0.3s;"></div>
+                                <div style="width: ${wrongWidth}%; background: var(--danger); transition: width 0.3s;"></div>
+                            `
+                            }
+                        </div>
+                        <span style="width: 40px; text-align: right; color: var(--text-3); font-weight:600;">${total} cards</span>
+                    </div>
+                `;
+      });
+    } else {
+      chartContainer.innerHTML = "Failed to load metrics matrix.";
+    }
+  } catch (err) {
+    chartContainer.innerHTML = "Communication network fault occurred.";
+  }
+}

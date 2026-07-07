@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from google import genai
 from pypdf import PdfReader
-from models import db, Flashcard, Deck, User
+from models import db, Flashcard, Deck, User, StudyLog
 
 load_dotenv()
 
@@ -100,7 +100,7 @@ def login():
         print("LOGIN FAULT:", str(e))
         return jsonify({"error": "An error occurred during authentication."}), 500
 
-# ROUTE: Logs out the user
+# Logs out the user
 @app.route("/logout")
 @login_required
 def logout():
@@ -140,7 +140,7 @@ def generate_flashcards(text):
         print("SECURE SERVER LOG [Gemini Fault]:", str(e))
         return []
 
-# ROUTE: Generates flashcard instances linked securely to the active logged-in User profile ID
+# Generates flashcard instances linked securely to the active logged-in User profile ID
 @app.route("/generate", methods=["POST"])
 @login_required
 def generate():
@@ -149,7 +149,7 @@ def generate():
         current_context_deck_id = None
         MAX_CHARACTER_LIMIT = 80000
 
-        # Pathway A: Multipart file parsing pipeline
+        # Multipart file parsing pipeline
         if request.content_type and "multipart/form-data" in request.content_type:
             raw_deck_id = request.form.get("deck_id")
             
@@ -176,7 +176,7 @@ def generate():
                             extracted_pages.append(page_text)
                     text = "\n".join(extracted_pages)
 
-        # Pathway B: Typed text payload parsing pipeline
+        # Typed text payload parsing pipeline
         else:
             data = request.get_json() or {}
             text = data.get("text", "")
@@ -363,6 +363,12 @@ def review_flashcard(card_id):
         elif user_status == "wrong":
             card.interval = 1
 
+        log_entry = StudyLog(
+            user_id=current_user.id,
+            deck_id=card.deck_id,
+            status=user_status
+        )
+        db.session.add(log_entry)
         card.next_review = datetime.utcnow() + timedelta(days=card.interval)
         db.session.commit()
 
@@ -445,6 +451,67 @@ def rename_deck(deck_id):
         print("SERVER EXCEPTION:", str(e))
         db.session.rollback()
         return jsonify({"error": "Failed to execute column updates."}), 500
+
+@app.route("/api/analytics/profile", methods=["GET"])
+@login_required
+def get_profile_analytics():
+    try:
+        from models import StudyLog, Deck, Flashcard
+        from sqlalchemy import func
+        
+        now = datetime.utcnow()
+        seven_days_ago = now - timedelta(days=7)
+        
+        # Total lifetime counts
+        total_decks = Deck.query.filter_by(user_id=current_user.id).count()
+        
+        # Grab all review logs for this user in the past week
+        logs = StudyLog.query.filter(
+            StudyLog.user_id == current_user.id,
+            StudyLog.reviewed_at >= seven_days_ago
+        ).order_by(StudyLog.reviewed_at.asc()).all()
+        
+        # Calculate Daily Review Activities for Charting Maps
+        chart_data = {}
+        for i in range(7):
+            day_label = (now - timedelta(days=i)).strftime("%b %d")
+            chart_data[day_label] = {"correct": 0, "wrong": 0}
+            
+        for log in logs:
+            day_label = log.reviewed_at.strftime("%b %d")
+            if day_label in chart_data:
+                chart_data[day_label][log.status] += 1
+                
+        # Compute Current Consecutive Day Study Streak
+        all_review_dates = db.session.query(
+            func.date(StudyLog.reviewed_at)
+        ).filter(StudyLog.user_id == current_user.id).distinct().order_by(func.date(StudyLog.reviewed_at).desc()).all()
+        
+        streak = 0
+        today_date = now.date()
+        expected_date = today_date
+        
+        # Loop backwards through unique study dates to check if the sequence is broken
+        for date_entry in all_review_dates:
+            log_date = datetime.strptime(date_entry[0], "%Y-%m-%d").date()
+            if log_date == expected_date:
+                streak += 1
+                expected_date -= timedelta(days=1)
+            elif log_date == today_date - timedelta(days=1) and streak == 0:
+                # If they haven't studied today yet, check if they studied yesterday to keep the streak alive
+                streak = 1
+                expected_date = log_date - timedelta(days=1)
+            else:
+                break
+
+        return jsonify({
+            "total_decks": total_decks,
+            "streak": streak,
+            "chart": [{"day": k, "correct": v["correct"], "wrong": v["wrong"]} for k, v in reversed(chart_data.items())]
+        })
+    except Exception as e:
+        print("PROFILE ANALYTICS FAULT:", str(e))
+        return jsonify({"error": "Failed to compile user profile stats matrix."}), 500
 
 if __name__ == "__main__":
     app.run(debug=False)

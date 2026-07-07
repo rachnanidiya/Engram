@@ -29,27 +29,40 @@
 
     <div class="app-shell">
 
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="brand">
-                    <div class="brand-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 20V2h13.5v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    </div>
-                    <span class="brand-name">Engram</span>
-                </div>
-
-                <button onclick="createNewDeckMode()" class="btn-new-deck">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    New Deck
-                </button>
+       <aside class="sidebar">
+    <div class="sidebar-top">
+        <div class="brand">
+            <div class="brand-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 20V2h13.5v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             </div>
+            <span class="brand-name">Engram</span>
+        </div>
 
-            <div class="sidebar-section-label">Your Decks</div>
+        <button onclick="createNewDeckMode()" class="btn-new-deck">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Deck
+        </button>
+    </div>
 
-            <div id="decksList" class="decks-list">
-                <div class="deck-loading">Loading decks...</div>
-            </div>
-        </aside>
+    <div class="sidebar-section-label">Your Decks</div>
+
+    <div id="decksList" class="decks-list">
+        <div class="deck-loading">Loading decks...</div>
+    </div>
+
+    <div class="sidebar-profile-panel" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px;">
+        <div class="profile-info" style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em;">Active Profile</span>
+           <span onclick="openProfileDashboard()" style="font-size: 14px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: inline-block;">
+        👤 {{ current_user.username }}
+    </span>
+        </div>
+        <a href="/logout" style="display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 8px; background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.15); color: var(--danger); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; text-decoration: none; transition: all 0.2s ease;" onmouseover="this.style.background='var(--danger)'; this.style.color='#fff';" onmouseout="this.style.background='rgba(244, 63, 94, 0.08)'; this.style.color='var(--danger)';">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+        </a>
+    </div>
+</aside>
 
         <main class="main">
 
@@ -148,7 +161,31 @@
 
         </main>
     </div>
+<div id="profileModal" class="profile-modal-overlay" onclick="document.getElementById('profileModal').classList.remove('active')">
+    <div class="loading-card profile-modal-card" onclick="event.stopPropagation()">
+        
+        <div class="modal-header">
+            <h2 class="page-title modal-title">📊 Performance Profile</h2>
+            <button onclick="document.getElementById('profileModal').classList.remove('active')" class="modal-close-btn">✕</button>
+        </div>
+        
+        <div class="profile-stats-grid">
+            <div class="stat-box">
+                <span class="stat-label">🔥 Study Streak</span>
+                <span id="profileStreak" class="stat-value text-accent">0 Days</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">🗂️ Managed Decks</span>
+                <span id="profileDecks" class="stat-value">0</span>
+            </div>
+        </div>
 
+        <h4 class="chart-section-title">7-Day Review Distribution</h4>
+        <div id="barChartContainer" class="chart-wrapper-panel">
+            </div>
+        
+    </div>
+</div>
     <script src="/static/js/script.js"></script>
 </body>
 </html>

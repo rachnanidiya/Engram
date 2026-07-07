@@ -33,3 +33,10 @@ class Flashcard(db.Model):
     ease = db.Column(db.Float, default=2.5)
     interval = db.Column(db.Integer, default=1)
     next_review = db.Column(db.DateTime, default=datetime.utcnow)
+
+class StudyLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    deck_id = db.Column(db.Integer, db.ForeignKey('deck.id'), nullable=False)
+    reviewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(50), nullable=False)  # "correct" or "wrong"
