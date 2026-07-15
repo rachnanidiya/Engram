@@ -37,9 +37,13 @@ def load_user(user_id):
 # Explicitly restrict global upload file stream payloads to prevent Memory DoS attacks
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # Strict 16MB file threshold ceiling
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///flashcards.db")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_DB_PATH = f"sqlite:///{os.path.join(BASE_DIR, 'flashcards.db')}"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", DEFAULT_DB_PATH)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
 with app.app_context():
