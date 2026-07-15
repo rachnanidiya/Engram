@@ -3,3 +3,4 @@ Flask-SQLAlchemy
 Flask-Login
 google-genai
 gunicorn
+python-dotenv
